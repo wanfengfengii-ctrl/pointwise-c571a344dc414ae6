@@ -6,6 +6,7 @@ from intake.batches import load_batch
 from .drafts import load_draft
 from .permutations import require_permutation
 from .revisions import FrozenRevision, store_revision
+from .sections import bind_section
 
 
 def freeze(db: sqlite3.Connection, draft_id: str, profile_name: str) -> FrozenRevision:
@@ -17,4 +18,6 @@ def freeze(db: sqlite3.Connection, draft_id: str, profile_name: str) -> FrozenRe
         profile = load_profile(db, profile_name)
         by_id = {specimen.specimen_id: specimen for specimen in batch.specimens}
         plan = plan_loads((by_id[identity] for identity in order), profile)
-        return store_revision(db, draft_id, batch, order, profile, plan)
+        revision = store_revision(db, draft_id, batch, order, profile, plan)
+        bind_section(db, revision.revision_id, draft_id)
+        return revision

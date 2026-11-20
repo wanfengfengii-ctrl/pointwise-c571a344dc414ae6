@@ -5,7 +5,7 @@ from .entries import Daybook, SignReceipt
 
 def render_daybook(book: Daybook, receipt: SignReceipt) -> dict:
     result = book.result
-    return {
+    detail = {
         'book_id': book.book_id,
         'delivery': asdict(result.delivery),
         'intake_receipt_id': result.intake_receipt_id,
@@ -26,3 +26,15 @@ def render_daybook(book: Daybook, receipt: SignReceipt) -> dict:
         'changeover_count': result.plan.changeover_count,
         'sign_receipt': asdict(receipt),
     }
+    review = result.layout_review
+    if review is not None:
+        detail['layout_review'] = {
+            'start_revision': review.start_revision,
+            'end_revision': review.end_revision,
+            'results': [
+                {'note': dict(note), 'status': adjudication['status'],
+                 'final_cut': adjudication['final_cut']}
+                for note, adjudication in zip(review.notes, review.adjudications)
+            ],
+        }
+    return detail

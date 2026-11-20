@@ -25,6 +25,19 @@ class FrozenRevision:
         return tuple(specimen.specimen_id for specimen in self.specimens)
 
 
+def require_revision_identity(revision_id: object) -> str:
+    require_text(revision_id, 'revision_id')
+    prefix, separator, number = revision_id.partition(':')
+    if (prefix != 'revision' or not separator or not number.isascii()
+            or not number.isdecimal() or number.startswith('0')):
+        raise ValueError('invalid frozen revision identity')
+    return revision_id
+
+
+def revision_number(revision_id: str) -> int:
+    return int(require_revision_identity(revision_id).partition(':')[2])
+
+
 def init_revisions(db: sqlite3.Connection) -> None:
     db.execute('''
         CREATE TABLE IF NOT EXISTS layout_revisions (

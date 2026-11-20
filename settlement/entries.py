@@ -6,7 +6,7 @@ from exchange.receipts import DeliveryReceipt
 from fixture.loading import LoadPlan
 from fixture.profiles import make_profile
 from intake.specimens import build_specimens
-from .audit import AuditResult
+from .audit import AuditResult, LayoutReview
 
 
 @dataclass(frozen=True)
@@ -46,8 +46,15 @@ def init_settlement(db: sqlite3.Connection) -> None:
         ''')
 
 
+def _snapshot(result: AuditResult) -> dict:
+    record = asdict(result)
+    if record['layout_review'] is None:
+        del record['layout_review']
+    return record
+
+
 def insert_daybook(db: sqlite3.Connection, result: AuditResult) -> Daybook:
-    cursor = db.execute('INSERT INTO settlement_books (result) VALUES (?)', (json.dumps(asdict(result)),))
+    cursor = db.execute('INSERT INTO settlement_books (result) VALUES (?)', (json.dumps(_snapshot(result)),))
     return Daybook(cursor.lastrowid, result)
 
 
@@ -73,10 +80,16 @@ def load_signed_daybook(db: sqlite3.Connection, book_id: int) -> tuple[Daybook, 
         raise KeyError(f'unknown signed daybook {book_id}')
     encoded, receipt_id, digest = row
     snapshot = json.loads(encoded)
+    review = snapshot.get('layout_review')
+    if review is not None:
+        review = LayoutReview(
+            review['start_revision'], review['end_revision'],
+            tuple(review['notes']), tuple(review['adjudications']),
+        )
     result = AuditResult(
         DeliveryReceipt(**snapshot['delivery']), snapshot['intake_receipt_id'], snapshot['source'],
         build_specimens(snapshot['specimens']), tuple(snapshot['order']),
-        make_profile(**snapshot['profile']), LoadPlan.from_record(snapshot['plan']),
+        make_profile(**snapshot['profile']), LoadPlan.from_record(snapshot['plan']), review,
     )
     return Daybook(book_id, result), SignReceipt(book_id, receipt_id, digest)
 

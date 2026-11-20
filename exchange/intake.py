@@ -1,12 +1,12 @@
 import sqlite3
 
 from fixture.eligibility import require_eligible
-from .format import decode_v1
+from .format import decode_item
 from .receipts import find_received_item, store_received_item
 
 
 def accept(db: sqlite3.Connection, item: bytes) -> int:
-    payload = decode_v1(item)
+    payload = decode_item(item)
     for specimen in payload.specimens:
         require_eligible(specimen, payload.profile)
     db.execute('BEGIN IMMEDIATE')

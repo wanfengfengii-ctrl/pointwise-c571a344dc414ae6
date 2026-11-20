@@ -8,6 +8,7 @@ from .edit_log import append_draft_edit, init_edit_log
 from .moves import SegmentMove, move_segment
 from .permutations import require_permutation
 from .revisions import init_revisions
+from .sections import init_sections
 
 
 @dataclass(frozen=True)
@@ -31,6 +32,7 @@ def init_layout(db: sqlite3.Connection) -> None:
         ''')
         init_edit_log(db)
         init_revisions(db)
+        init_sections(db)
 
 
 def _decode_draft(row: tuple) -> Draft:
